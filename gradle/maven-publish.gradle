@@ -1,0 +1,75 @@
+/**
+ * Shared Gradle script for Maven Central publication configuration.
+ * Usage: apply from: rootProject.file('gradle/maven-publish.gradle')
+ */
+
+// Sources JAR task
+task sourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+}
+
+// Publication configuration
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group.toString()
+            version = project.version.toString()
+            
+            // Get artifactId from extra property - required
+            def artifactIdValue = project.findProperty("artifactId")
+            if (!artifactIdValue) {
+                throw new GradleException("artifactId must be set in build.gradle.kts using: extra[\"artifactId\"] = \"your-artifact-id\"")
+            }
+            artifactId = artifactIdValue
+            
+            from components.java
+            artifact sourcesJar
+            
+            pom {
+                url = 'https://github.com/Eugene239/android-arch'
+                
+                // Get POM name and description from extra properties if set
+                def pomName = project.findProperty("pomName")
+                if (pomName) {
+                    name = pomName
+                }
+                
+                def pomDescription = project.findProperty("pomDescription")
+                if (pomDescription) {
+                    description = pomDescription
+                }
+                
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                
+                developers {
+                    developer {
+                        id = 'Eugene239'
+                        name = 'Eugene239'
+                    }
+                }
+                
+                scm {
+                    connection = 'scm:git:git://github.com/Eugene239/android-arch.git'
+                    developerConnection = 'scm:git:ssh://github.com:Eugene239/android-arch.git'
+                    url = 'https://github.com/Eugene239/android-arch'
+                }
+            }
+        }
+    }
+}
+
+// GPG signing (required for Maven Central)
+signing {
+    def signingKeyId = project.findProperty("signing.keyId")
+    
+    if (signingKeyId) {
+        useGpgCmd() // Uses system GPG
+        sign publishing.publications.maven
+    }
+}
