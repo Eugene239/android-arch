@@ -16,7 +16,8 @@ apply plugin: 'signing'
 // Configure mavenPublishing
 project.mavenPublishing {
     // Publish to Maven Central Portal (automatically uses CENTRAL_PORTAL in version 0.34.0+)
-    publishToMavenCentral()
+    // automaticRelease = true enables automatic release after publishing
+    publishToMavenCentral(true)
     
     // Sign all publications
     signAllPublications()
