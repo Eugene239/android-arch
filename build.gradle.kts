@@ -14,7 +14,7 @@ apply(plugin = "io.github.gradle-nexus.publish-plugin")
 configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
     repositories {
         create("sonatype") {
-            // OSSRH endpoint (still works with Central Portal credentials)
+            // OSSRH endpoint (works with Central Portal User Token)
             nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
             snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
 
@@ -24,6 +24,8 @@ configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
             if (usernameValue != null && passwordValue != null) {
                 username.set(usernameValue)
                 password.set(passwordValue)
+                
+                logger.info("Sonatype credentials configured: username length=${usernameValue.length}, password length=${passwordValue.length}")
             }
         }
     }

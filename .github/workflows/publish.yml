@@ -116,7 +116,13 @@ jobs:
           echo "ERROR: SONATYPE_USERNAME is not set"
           exit 1
         fi
+        if [ -z "$ORG_GRADLE_PROJECT_sonatypePassword" ]; then
+          echo "ERROR: SONATYPE_PASSWORD is not set"
+          exit 1
+        fi
         echo "SONATYPE_USERNAME is set (length: ${#ORG_GRADLE_PROJECT_sonatypeUsername})"
+        echo "SONATYPE_PASSWORD is set (length: ${#ORG_GRADLE_PROJECT_sonatypePassword})"
+        echo "INFO: Make sure SONATYPE_PASSWORD is a User Token from Central Portal, not your account password!"
         ./gradlew publishToSonatype closeAndReleaseStagingRepository --no-daemon
       
     - name: Publish single module to Maven Central
@@ -133,7 +139,13 @@ jobs:
           echo "ERROR: SONATYPE_USERNAME is not set"
           exit 1
         fi
+        if [ -z "$ORG_GRADLE_PROJECT_sonatypePassword" ]; then
+          echo "ERROR: SONATYPE_PASSWORD is not set"
+          exit 1
+        fi
         echo "SONATYPE_USERNAME is set (length: ${#ORG_GRADLE_PROJECT_sonatypeUsername})"
+        echo "SONATYPE_PASSWORD is set (length: ${#ORG_GRADLE_PROJECT_sonatypePassword})"
+        echo "INFO: Make sure SONATYPE_PASSWORD is a User Token from Central Portal, not your account password!"
         # Use publishAllPublicationsToSonatypeRepository for individual modules
         ./gradlew ${{ steps.publish_tasks.outputs.gradle_path }}:publishAllPublicationsToSonatypeRepository --no-daemon
         ./gradlew closeAndReleaseStagingRepository --no-daemon
