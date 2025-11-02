@@ -40,15 +40,15 @@ jobs:
         fingerprint: ${{ secrets.GPG_FINGERPRINT }}
         git_config_global: false
         
-    - name: Configure GPG for Gradle
+    - name: Configure GPG for CI
       run: |
-        # Configure GPG to work without agent
+        # Configure GPG to work in CI environment
         mkdir -p ~/.gnupg
         chmod 700 ~/.gnupg
+        # Use no-use-agent to avoid gpg-agent issues in CI
+        echo "no-use-agent" > ~/.gnupg/gpg.conf
         echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-        echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf || true
-        # Restart gpg-agent to apply changes
-        gpgconf --kill gpg-agent || true
+        export GPG_TTY=$(tty)
         # Verify GPG key is available
         gpg --list-secret-keys --keyid-format LONG
         
