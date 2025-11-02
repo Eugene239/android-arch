@@ -1,5 +1,13 @@
 name: Publish to Maven Central
 
+# Usage:
+# - For all modules: Run workflow without selecting module (or select empty option)
+# - For single module: Select module from dropdown:
+#   * onboarding-domain
+#   * onboarding-data
+#   * userstate-domain
+#   * userstate-data
+
 on:
   release:
     types: [created]
@@ -105,50 +113,56 @@ jobs:
     - name: Publish all modules to Maven Central
       if: steps.publish_tasks.outputs.modules == 'all'
       env:
-        ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.SONATYPE_USERNAME }}
-        ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
+        ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+        ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
         ORG_GRADLE_PROJECT_signingKeyId: ${{ steps.gpg_keyid.outputs.keyId }}
+        ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_PRIVATE_KEY }}
         ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PASSPHRASE }}
       run: |
         # Verify credentials are being passed (without showing values)
         echo "Checking credentials setup..."
-        if [ -z "$ORG_GRADLE_PROJECT_sonatypeUsername" ]; then
+        if [ -z "$ORG_GRADLE_PROJECT_mavenCentralUsername" ]; then
           echo "ERROR: SONATYPE_USERNAME is not set"
           exit 1
         fi
-        if [ -z "$ORG_GRADLE_PROJECT_sonatypePassword" ]; then
+        if [ -z "$ORG_GRADLE_PROJECT_mavenCentralPassword" ]; then
           echo "ERROR: SONATYPE_PASSWORD is not set"
           exit 1
         fi
-        echo "SONATYPE_USERNAME is set (length: ${#ORG_GRADLE_PROJECT_sonatypeUsername})"
-        echo "SONATYPE_PASSWORD is set (length: ${#ORG_GRADLE_PROJECT_sonatypePassword})"
-        echo "INFO: Make sure SONATYPE_PASSWORD is a User Token from Central Portal, not your account password!"
-        ./gradlew publishToSonatype closeAndReleaseStagingRepository --no-daemon
+        echo "mavenCentralUsername is set (length: ${#ORG_GRADLE_PROJECT_mavenCentralUsername})"
+        echo "mavenCentralPassword is set (length: ${#ORG_GRADLE_PROJECT_mavenCentralPassword})"
+        echo "INFO: For Central Portal User Token (from https://central.sonatype.com/usertoken):"
+        echo "INFO: - Username should be the TOKEN NAME (not your login username!)"
+        echo "INFO: - Password should be the TOKEN VALUE (passcode)"
+        # vanniktech plugin task for publishing all modules (with automatic release)
+        ./gradlew publishToMavenCentral --no-daemon
       
     - name: Publish single module to Maven Central
       if: steps.publish_tasks.outputs.modules != 'all'
       env:
-        ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.SONATYPE_USERNAME }}
-        ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
+        ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+        ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
         ORG_GRADLE_PROJECT_signingKeyId: ${{ steps.gpg_keyid.outputs.keyId }}
+        ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_PRIVATE_KEY }}
         ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PASSPHRASE }}
       run: |
         # Verify credentials are being passed (without showing values)
         echo "Checking credentials setup..."
-        if [ -z "$ORG_GRADLE_PROJECT_sonatypeUsername" ]; then
+        if [ -z "$ORG_GRADLE_PROJECT_mavenCentralUsername" ]; then
           echo "ERROR: SONATYPE_USERNAME is not set"
           exit 1
         fi
-        if [ -z "$ORG_GRADLE_PROJECT_sonatypePassword" ]; then
+        if [ -z "$ORG_GRADLE_PROJECT_mavenCentralPassword" ]; then
           echo "ERROR: SONATYPE_PASSWORD is not set"
           exit 1
         fi
-        echo "SONATYPE_USERNAME is set (length: ${#ORG_GRADLE_PROJECT_sonatypeUsername})"
-        echo "SONATYPE_PASSWORD is set (length: ${#ORG_GRADLE_PROJECT_sonatypePassword})"
-        echo "INFO: Make sure SONATYPE_PASSWORD is a User Token from Central Portal, not your account password!"
-        # Use publishAllPublicationsToSonatypeRepository for individual modules
-        ./gradlew ${{ steps.publish_tasks.outputs.gradle_path }}:publishAllPublicationsToSonatypeRepository --no-daemon
-        ./gradlew closeAndReleaseStagingRepository --no-daemon
+        echo "mavenCentralUsername is set (length: ${#ORG_GRADLE_PROJECT_mavenCentralUsername})"
+        echo "mavenCentralPassword is set (length: ${#ORG_GRADLE_PROJECT_mavenCentralPassword})"
+        echo "INFO: For Central Portal User Token (from https://central.sonatype.com/usertoken):"
+        echo "INFO: - Username should be the TOKEN NAME (not your login username!)"
+        echo "INFO: - Password should be the TOKEN VALUE (passcode)"
+        # Publish single module using vanniktech plugin (with automatic release)
+        ./gradlew ${{ steps.publish_tasks.outputs.gradle_path }}:publishToMavenCentral --no-daemon
       
     - name: Determine version
       id: version

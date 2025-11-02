@@ -1,75 +1,77 @@
 /**
- * Shared Gradle script for Maven Central publication configuration.
+ * Shared Gradle script for Maven Central publication configuration using vanniktech plugin.
  * Usage: apply from: rootProject.file('gradle/maven-publish.gradle')
+ * 
+ * This script automatically applies the vanniktech plugin and configures mavenPublishing.
+ * Each module should define:
+ * - artifactId (property)
+ * - pomName (property, optional, defaults to project.name)
+ * - pomDescription (property, optional)
  */
 
-// Sources JAR task
-task sourcesJar(type: Jar) {
-    archiveClassifier.set('sources')
-    from sourceSets.main.allSource
-}
+// Apply plugins
+apply plugin: 'com.vanniktech.maven.publish'
+apply plugin: 'signing'
 
-// Publication configuration
-publishing {
-    publications {
-        maven(MavenPublication) {
-            groupId = project.group.toString()
-            version = project.version.toString()
-            
-            // Get artifactId from extra property - required
-            def artifactIdValue = project.findProperty("artifactId")
-            if (!artifactIdValue) {
-                throw new GradleException("artifactId must be set in build.gradle.kts using: extra[\"artifactId\"] = \"your-artifact-id\"")
+// Configure mavenPublishing
+project.mavenPublishing {
+    // Publish to Maven Central Portal (automatically uses CENTRAL_PORTAL in version 0.34.0+)
+    publishToMavenCentral()
+    
+    // Sign all publications
+    signAllPublications()
+    
+    // Coordinates - artifactId must be set in each module as a property
+    def artifactId = project.findProperty("artifactId") ?: project.name
+    coordinates(
+        project.group.toString(),
+        artifactId,
+        project.version.toString()
+    )
+    
+    // POM configuration
+    pom {
+        // Name and description should be set in each module as properties
+        def pomName = project.findProperty("pomName") ?: project.name
+        def pomDescription = project.findProperty("pomDescription") ?: ""
+        
+        name.set(pomName)
+        description.set(pomDescription)
+        url.set("https://github.com/Eugene239/android-arch")
+        
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
             }
-            artifactId = artifactIdValue
-            
-            from components.java
-            artifact sourcesJar
-            
-            pom {
-                url = 'https://github.com/Eugene239/android-arch'
-                
-                // Get POM name and description from extra properties if set
-                def pomName = project.findProperty("pomName")
-                if (pomName) {
-                    name = pomName
-                }
-                
-                def pomDescription = project.findProperty("pomDescription")
-                if (pomDescription) {
-                    description = pomDescription
-                }
-                
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-                
-                developers {
-                    developer {
-                        id = 'Eugene239'
-                        name = 'Eugene239'
-                    }
-                }
-                
-                scm {
-                    connection = 'scm:git:git://github.com/Eugene239/android-arch.git'
-                    developerConnection = 'scm:git:ssh://github.com:Eugene239/android-arch.git'
-                    url = 'https://github.com/Eugene239/android-arch'
-                }
+        }
+        
+        developers {
+            developer {
+                id.set("Eugene239")
+                name.set("Eugene239")
             }
+        }
+        
+        scm {
+            connection.set("scm:git:git://github.com/Eugene239/android-arch.git")
+            developerConnection.set("scm:git:ssh://github.com:Eugene239/android-arch.git")
+            url.set("https://github.com/Eugene239/android-arch")
         }
     }
 }
 
-// GPG signing (required for Maven Central)
-signing {
-    def signingKeyId = project.findProperty("signing.keyId")
+// Configure signing - use GPG from system (CI) or in-memory keys (local)
+project.signing {
+    def signingKeyId = project.findProperty("signing.keyId") ?: System.getenv("ORG_GRADLE_PROJECT_signingKeyId")
+    def signingKey = project.findProperty("signing.key") ?: System.getenv("ORG_GRADLE_PROJECT_signingKey")
+    def signingPassword = project.findProperty("signing.password") ?: System.getenv("ORG_GRADLE_PROJECT_signingPassword")
     
-    if (signingKeyId) {
-        useGpgCmd() // Uses system GPG
-        sign publishing.publications.maven
+    if (signingKeyId && signingKey && signingPassword) {
+        // Use in-memory keys (for CI with secrets)
+        useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+    } else if (signingKeyId) {
+        // Use system GPG (for local development)
+        useGpgCmd()
     }
 }

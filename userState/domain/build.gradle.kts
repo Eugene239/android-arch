@@ -1,7 +1,5 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    `maven-publish`
-    signing
 }
 
 group = "io.github.eugene239.androidarch"
@@ -11,10 +9,10 @@ kotlin {
     jvmToolchain(libs.versions.jvm.toolchain.get().toInt())
 }
 
-// Set publication metadata
-extra["artifactId"] = "userstate-domain"
-extra["pomName"] = "UserState Domain"
-extra["pomDescription"] = "Domain layer for user state management"
+// Set publication metadata (for gradle/maven-publish.gradle)
+project.ext.set("artifactId", "userstate-domain")
+project.ext.set("pomName", "UserState Domain")
+project.ext.set("pomDescription", "Domain layer for user state management")
 
 dependencies {
     implementation(libs.kotlinx.coroutines.core)
@@ -28,5 +26,5 @@ tasks.test {
     useJUnitPlatform()
 }
 
-// Apply shared publication configuration
+// Maven Central publishing configuration is in gradle/maven-publish.gradle
 apply(from = rootProject.file("gradle/maven-publish.gradle"))

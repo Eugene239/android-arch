@@ -1,7 +1,5 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    `maven-publish`
-    signing
 }
 
 group = "io.github.eugene239.androidarch"
@@ -11,14 +9,14 @@ kotlin {
     jvmToolchain(libs.versions.jvm.toolchain.get().toInt())
 }
 
-// Set publication metadata
-extra["artifactId"] = "onboarding-domain"
-extra["pomName"] = "Onboarding Domain"
-extra["pomDescription"] = "Domain layer for onboarding feature"
+// Set publication metadata (for gradle/maven-publish.gradle)
+project.ext.set("artifactId", "onboarding-domain")
+project.ext.set("pomName", "Onboarding Domain")
+project.ext.set("pomDescription", "Domain layer for onboarding feature")
 
 dependencies {
     implementation(libs.kotlinx.coroutines.core)
 }
 
-// Apply shared publication configuration
+// Maven Central publishing configuration is in gradle/maven-publish.gradle
 apply(from = rootProject.file("gradle/maven-publish.gradle"))
