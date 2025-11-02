@@ -74,7 +74,7 @@ jobs:
         else
           echo "Task will publish module: ${{ inputs.module }}" >> $GITHUB_STEP_SUMMARY
           echo "modules=${{ inputs.module }}" >> $GITHUB_OUTPUT
-          # Map artifact names to Gradle module paths
+          # Map artifact names to Gradle module paths (use include paths from settings.gradle.kts)
           case "${{ inputs.module }}" in
             onboarding-domain)
               echo "gradle_path=:onboarding:domain" >> $GITHUB_OUTPUT
@@ -118,7 +118,8 @@ jobs:
         ORG_GRADLE_PROJECT_signingKeyId: ${{ steps.gpg_keyid.outputs.keyId }}
         ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PASSPHRASE }}
       run: |
-        ./gradlew ${{ steps.publish_tasks.outputs.gradle_path }}:publishToSonatype --no-daemon
+        # Use publishAllPublicationsToSonatypeRepository for individual modules
+        ./gradlew ${{ steps.publish_tasks.outputs.gradle_path }}:publishAllPublicationsToSonatypeRepository --no-daemon
         ./gradlew closeAndReleaseStagingRepository --no-daemon
       
     - name: Determine version
