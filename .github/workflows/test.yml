@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      checks: write  # Required for publish-unit-test-result-action to create check runs
+      contents: read  # Required for checkout
     
     steps:
     - name: Checkout code

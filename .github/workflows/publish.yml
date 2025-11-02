@@ -60,6 +60,21 @@ jobs:
         else
           echo "Task will publish module: ${{ inputs.module }}" >> $GITHUB_STEP_SUMMARY
           echo "modules=${{ inputs.module }}" >> $GITHUB_OUTPUT
+          # Map artifact names to Gradle module paths
+          case "${{ inputs.module }}" in
+            onboarding-domain)
+              echo "gradle_path=:onboarding:domain" >> $GITHUB_OUTPUT
+              ;;
+            onboarding-data)
+              echo "gradle_path=:onboarding:data" >> $GITHUB_OUTPUT
+              ;;
+            userstate-domain)
+              echo "gradle_path=:userState:domain" >> $GITHUB_OUTPUT
+              ;;
+            userstate-data)
+              echo "gradle_path=:userState:data" >> $GITHUB_OUTPUT
+              ;;
+          esac
         fi
         
     - name: Publish all modules to Maven Central
@@ -79,9 +94,22 @@ jobs:
         ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_FINGERPRINT }}
         ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PASSPHRASE }}
       run: |
-        ./gradlew :${{ inputs.module }}:publishToSonatype --no-daemon
+        ./gradlew ${{ steps.publish_tasks.outputs.gradle_path }}:publishToSonatype --no-daemon
         ./gradlew closeAndReleaseStagingRepository --no-daemon
       
+    - name: Determine version
+      id: version
+      run: |
+        if [ -n "${{ github.event.release.tag_name }}" ]; then
+          echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+        elif [ -n "${{ github.ref_name }}" ]; then
+          # Fallback to ref name (branch or tag) if release tag is not available
+          echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        else
+          # Final fallback - version from build.gradle.kts
+          echo "version=1.0.0" >> $GITHUB_OUTPUT
+        fi
+        
     - name: Build summary
       if: success()
       run: |
@@ -90,15 +118,15 @@ jobs:
         
         if [ "${{ steps.publish_tasks.outputs.modules }}" == "all" ]; then
           echo "**Published all modules:**" >> $GITHUB_STEP_SUMMARY
-          echo "- \`io.github.eugene239:android-arch-onboarding-domain:${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`io.github.eugene239:android-arch-onboarding-data:${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`io.github.eugene239:android-arch-userstate-domain:${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`io.github.eugene239:android-arch-userstate-data:${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`io.github.eugene239.androidarch:onboarding-domain:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`io.github.eugene239.androidarch:onboarding-data:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`io.github.eugene239.androidarch:userstate-domain:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`io.github.eugene239.androidarch:userstate-data:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
         else
-          echo "**Published module:** \`${{ inputs.module }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Published module:** \`io.github.eugene239.androidarch:${{ inputs.module }}:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
         fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Repository:** \`io.github.eugene239\`" >> $GITHUB_STEP_SUMMARY
-        echo "**View on Maven Central:** https://central.sonatype.com/artifact/io.github.eugene239" >> $GITHUB_STEP_SUMMARY
+        echo "**Group:** \`io.github.eugene239.androidarch\`" >> $GITHUB_STEP_SUMMARY
+        echo "**View on Maven Central:** https://central.sonatype.com/artifact/io.github.eugene239.androidarch" >> $GITHUB_STEP_SUMMARY
 
