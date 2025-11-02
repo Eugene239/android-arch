@@ -109,7 +109,15 @@ jobs:
         ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
         ORG_GRADLE_PROJECT_signingKeyId: ${{ steps.gpg_keyid.outputs.keyId }}
         ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PASSPHRASE }}
-      run: ./gradlew publishToSonatype closeAndReleaseStagingRepository --no-daemon
+      run: |
+        # Verify credentials are being passed (without showing values)
+        echo "Checking credentials setup..."
+        if [ -z "$ORG_GRADLE_PROJECT_sonatypeUsername" ]; then
+          echo "ERROR: SONATYPE_USERNAME is not set"
+          exit 1
+        fi
+        echo "SONATYPE_USERNAME is set (length: ${#ORG_GRADLE_PROJECT_sonatypeUsername})"
+        ./gradlew publishToSonatype closeAndReleaseStagingRepository --no-daemon
       
     - name: Publish single module to Maven Central
       if: steps.publish_tasks.outputs.modules != 'all'
@@ -119,6 +127,13 @@ jobs:
         ORG_GRADLE_PROJECT_signingKeyId: ${{ steps.gpg_keyid.outputs.keyId }}
         ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PASSPHRASE }}
       run: |
+        # Verify credentials are being passed (without showing values)
+        echo "Checking credentials setup..."
+        if [ -z "$ORG_GRADLE_PROJECT_sonatypeUsername" ]; then
+          echo "ERROR: SONATYPE_USERNAME is not set"
+          exit 1
+        fi
+        echo "SONATYPE_USERNAME is set (length: ${#ORG_GRADLE_PROJECT_sonatypeUsername})"
         # Use publishAllPublicationsToSonatypeRepository for individual modules
         ./gradlew ${{ steps.publish_tasks.outputs.gradle_path }}:publishAllPublicationsToSonatypeRepository --no-daemon
         ./gradlew closeAndReleaseStagingRepository --no-daemon
