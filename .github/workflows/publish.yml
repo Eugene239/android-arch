@@ -74,19 +74,20 @@ jobs:
         else
           echo "Task will publish module: ${{ inputs.module }}" >> $GITHUB_STEP_SUMMARY
           echo "modules=${{ inputs.module }}" >> $GITHUB_OUTPUT
-          # Map artifact names to Gradle module paths (use include paths from settings.gradle.kts)
+          # Map artifact names to Gradle project paths (use project names from settings.gradle.kts)
+          # Note: Gradle uses project.name for task paths, not include paths
           case "${{ inputs.module }}" in
             onboarding-domain)
-              echo "gradle_path=:onboarding:domain" >> $GITHUB_OUTPUT
+              echo "gradle_path=:onboarding:onboarding-domain" >> $GITHUB_OUTPUT
               ;;
             onboarding-data)
-              echo "gradle_path=:onboarding:data" >> $GITHUB_OUTPUT
+              echo "gradle_path=:onboarding:onboarding-data" >> $GITHUB_OUTPUT
               ;;
             userstate-domain)
-              echo "gradle_path=:userState:domain" >> $GITHUB_OUTPUT
+              echo "gradle_path=:userState:userstate-domain" >> $GITHUB_OUTPUT
               ;;
             userstate-data)
-              echo "gradle_path=:userState:data" >> $GITHUB_OUTPUT
+              echo "gradle_path=:userState:userstate-data" >> $GITHUB_OUTPUT
               ;;
           esac
         fi
