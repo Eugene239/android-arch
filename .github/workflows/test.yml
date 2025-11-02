@@ -44,7 +44,7 @@ jobs:
           **/build/test-results/test/TEST-*.xml
         check_name: Test Results
         report_individual_runs: false
-        fail_on: 'unstable'
+        fail_on: 'test failures'
         
     - name: Build summary
       if: success()
