@@ -32,11 +32,25 @@ jobs:
         distribution: 'temurin'
         
     - name: Set up GPG
-      uses: crazy-max/ghaction-import-gpg@v6
+      uses: crazy-max/ghaction-import-gpg@v7
       with:
         gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
         passphrase: ${{ secrets.GPG_PASSPHRASE }}
         fingerprint: ${{ secrets.GPG_FINGERPRINT }}
+        git_config_global: false
+        
+    - name: Configure GPG for Gradle
+      run: |
+        # Configure GPG to work without agent
+        mkdir -p ~/.gnupg
+        echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+        echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf || true
+        # Verify GPG key is available and get key ID (last 8 chars of fingerprint)
+        gpg --list-secret-keys --keyid-format LONG
+        echo "GPG_FINGERPRINT=${{ secrets.GPG_FINGERPRINT }}"
+        # Extract last 8 characters for signing.keyId (Gradle requirement)
+        KEY_ID="${GPG_FINGERPRINT: -8}"
+        echo "Using key ID: $KEY_ID"
         
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
@@ -77,12 +91,22 @@ jobs:
           esac
         fi
         
+    - name: Extract GPG Key ID
+      id: gpg_keyid
+      run: |
+        # Get last 8 characters of fingerprint for signing.keyId
+        FINGERPRINT="${{ secrets.GPG_FINGERPRINT }}"
+        # Remove any spaces from fingerprint
+        FINGERPRINT=$(echo "$FINGERPRINT" | tr -d ' ')
+        KEY_ID="${FINGERPRINT: -8}"
+        echo "keyId=$KEY_ID" >> $GITHUB_OUTPUT
+        
     - name: Publish all modules to Maven Central
       if: steps.publish_tasks.outputs.modules == 'all'
       env:
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.SONATYPE_USERNAME }}
         ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
-        ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_FINGERPRINT }}
+        ORG_GRADLE_PROJECT_signingKeyId: ${{ steps.gpg_keyid.outputs.keyId }}
         ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PASSPHRASE }}
       run: ./gradlew publishToSonatype closeAndReleaseStagingRepository --no-daemon
       
@@ -91,7 +115,7 @@ jobs:
       env:
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.SONATYPE_USERNAME }}
         ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
-        ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_FINGERPRINT }}
+        ORG_GRADLE_PROJECT_signingKeyId: ${{ steps.gpg_keyid.outputs.keyId }}
         ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_PASSPHRASE }}
       run: |
         ./gradlew ${{ steps.publish_tasks.outputs.gradle_path }}:publishToSonatype --no-daemon
